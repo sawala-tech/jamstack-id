@@ -18,23 +18,37 @@ exports.createPages = ({ graphql, actions }) => {
 
   const collections = graphql(`
    query {
-      allMarkdownRemark (filter: {frontmatter: {key: {eq: "blog"}}}){
+      allMarkdownRemark (filter: {frontmatter: {key: {eq: "blog"}}}, sort: {fields: frontmatter___title, order: ASC}){
         edges {
           node {
             fields {
               slug
+            }
+            frontmatter {
+              title
             }
           }
         }
       }
     }
   `).then(result => {
-    result.data.allMarkdownRemark.edges.forEach(({ node }) => {
+
+    // const posts = res.data.allMarkdownRemark.edges;
+    const blog = result.data.allMarkdownRemark.edges;
+
+    blog.forEach(({ node }, index) => {
+
+      const prev = index === 0 ? null : blog[index - 1].node;
+      const next = index === blog.length - 1 ? null : blog[index + 1].node
+
+
       createPage({
         path: '/blog/' + node.fields.slug,
         component: path.resolve('./src/template/detail_blog.js'),
         context: {
           slug: node.fields.slug,
+          prev,
+          next
         },
       });
     });
@@ -42,7 +56,7 @@ exports.createPages = ({ graphql, actions }) => {
 
   const posts = graphql(`
     query {
-      allMarkdownRemark (filter: {frontmatter: {key: {eq: "belajar"}}}){
+      allMarkdownRemark (filter: {frontmatter: {key: {eq: "belajar"}}}, sort: {fields: frontmatter___title, order: ASC}){
         edges {
           node {
             fields {
@@ -59,14 +73,46 @@ exports.createPages = ({ graphql, actions }) => {
       }
     }
   `).then(result => {
-    result.data.allMarkdownRemark.edges.forEach(({ node }) => {
+
+    const artikel = result.data.allMarkdownRemark.edges;
+
+
+    artikel.forEach(({ node }, index) => {
+
+      const prev = index === 0 ? null : artikel[index - 1].node;
+      const next = index === artikel.length - 1 ? null : artikel[index + 1].node
+
+
       createPage({
         path: '/belajar/' + node.fields.slug,
         component: path.resolve('./src/template/detail_belajar.js'),
         context: {
           slug: node.fields.slug,
+          prev,
+          next
         },
       });
+
+
+      // Create blog post list pages
+      const postsPerPage = 2;
+      const numPages = Math.ceil(posts.length / postsPerPage);
+
+      Array.from({ length: numPages }).forEach((_, i) => {
+        createPage({
+          path: i === 0 ? `/` : `/${i + 1}`,
+          component: path.resolve('./src/template/detail_belajar.js'),
+          context: {
+            limit: postsPerPage,
+            skip: i * postsPerPage,
+            numPages,
+            currentPage: i + 1
+          },
+        });
+      });
+
+
+
     });
   })
 
